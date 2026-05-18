@@ -2,9 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>dogan08ay Demo3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>doganpay Demo</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
+        .btn { background-color: #673ab7; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn:hover { background-color: #512da8; }
+        #status { margin-top: 20px; font-weight: bold; color: #333; }
+    </style>
 </head>
 <body>
+
     <h1>dogan08ay Demo3 is Working!</h1>
+    <p>Pi Network Testnet Ödeme Doğrulama Sayfası</p>
+    
+    <button class="btn" id="pay-button">Pi ile Test Ödemesi Yap (0.1 Pi)</button>
+    
+    <div id="status">Pi Browser içerisinden bağlanıp ödemeyi başlatın.</div>
+
+    <script>
+        // Pi SDK Başlatma
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: true });
+
+        document.getElementById('pay-button').addEventListener('click', async () => {
+            document.getElementById('status').innerText = "Cüzdan bağlantısı kuruluyor...";
+            try {
+                // Kullanıcı kimlik doğrulama listesi
+                const scopes = ['username', 'payments'];
+                
+                function onIncompletePaymentFound(payment) {
+                    console.log("Tamamlanmamış ödeme bulundu", payment);
+                };
+
+                Pi.authenticate(scopes, onIncompletePaymentFound).then(function(auth) {
+                    document.getElementById('status').innerText = "Giriş yapıldı: " + auth.user.username + ". Ödeme oluşturuluyor...";
+                    
+                    // Ödeme oluşturma isteği
+                    Pi.createPayment({
+                        amount: 0.1,
+                        memo: "doganpay Testnet Onay Ödemesi",
+                        metadata: { id: "test-payment-101" }
+                    }, {
+                        onReadyForServerApproval: function(paymentId) {
+                            document.getElementById('status').innerText = "Ödeme onay bekliyor. ID: " + paymentId;
+                        },
+                        onReadyForServerCompletion: function(paymentId, txid) {
+                            document.getElementById('status').innerText = "Ödeme tamamlanıyor... TxID: " + txid;
+                        },
+                        onCancel: function(paymentId) {
+                            document.getElementById('status').innerText = "Ödeme iptal edildi.";
+                        },
+                        onError: function(error, payment) {
+                            document.getElementById('status').innerText = "Hata oluştu: " + error.message;
+                        }
+                    });
+                }).catch(function(error) {
+                    document.getElementById('status').innerText = "Kimlik doğrulama hatası: " + error.message;
+                });
+            } catch (err) {
+                document.getElementById('status').innerText = "Sistem Hatası: " + err.message;
+            }
+        });
+    </script>
 </body>
 </html>
