@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>doganpay Demo</title>
+    <title>doganpay Ödeme Testi</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
@@ -13,10 +13,10 @@
 </head>
 <body>
 
-    <h1>dogan08ay Ödeme Testi</h1>
-    <p>Aşağıdaki mor butona basarak testi onaylayın.</p>
+    <h1>doganpay Test Ödemesi</h1>
+    <p>Lütfen aşağıdaki butona basıp adımları takip edin.</p>
     
-    <button class="btn" id="pay-button">Pi ile Test Ödemesi Yap (0.1 Pi)</button>
+    <button class="btn" id="pay-button">0.1 Test Pi Gönder</button>
     <div id="status">İşlemi başlatmak için butona basın.</div>
 
     <script>
@@ -24,30 +24,29 @@
         Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('pay-button').addEventListener('click', () => {
-            document.getElementById('status').innerText = "Cüzdan tetikleniyor...";
+            document.getElementById('status').innerText = "Bağlantı kuruluyor...";
             
-            Pi.authenticate(['username', 'payments'], function(p){}).then(function(auth) {
+            Pi.authenticate(['username', 'payments'], function(payment) {
+                // Tamamlanmamış ödeme kontrolü
+            }).then(function(auth) {
+                document.getElementById('status').innerText = "Cüzdan yükleniyor, lütfen bekleyin...";
+                
                 Pi.createPayment({
                     amount: 0.1,
-                    memo: "doganpay Onay Ödemesi",
-                    metadata: { id: "test-101" }
+                    memo: "doganpay Testnet Dogrulama",
+                    metadata: { orderId: "12345" }
                 }, {
                     onReadyForServerApproval: function(paymentId) {
-                        // Gerçek bir sunucu varmış gibi az önce oluşturduğumuz dosyayı çağırıyoruz
-                        fetch('https://dogan08ay.github.io/approve.json')
-                        .then(() => {
-                            // Pi sistemine onaylandığı bilgisini zorla kabul ettiriyoruz
-                            Pi.init({ version: "2.0", sandbox: true });
-                            document.getElementById('status').innerText = "Ödeme Sunucu Tarafından Onaylandı!";
-                        });
+                        document.getElementById('status').innerText = "Cüzdan şifrenizi girerek işlemi onaylayın.";
                     },
                     onReadyForServerCompletion: function(paymentId, txid) {
-                        document.getElementById('status').innerText = "İşlem Başarıyla Tamamlandı.";
+                        document.getElementById('status').innerText = "Tebrikler! İşlem tamamlandı. Geliştirici paneline dönebilirsiniz.";
                     },
-                    onCancel: function(paymentId) { },
-                    onError: function(err, p) {
-                        // Hata gelse bile sistemi başarıya zorluyoruz
-                        document.getElementById('status').innerText = "Test Tamamlandı! Paneli Kontrol Edin.";
+                    onCancel: function(paymentId) {
+                        document.getElementById('status').innerText = "İşlem iptal edildi.";
+                    },
+                    onError: function(error, payment) {
+                        document.getElementById('status').innerText = "Hata oluştu. Lütfen tekrar deneyin.";
                     }
                 });
             });
