@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>doganpay Onay</title>
+    <title>dogan08ay Onay</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
@@ -12,37 +12,53 @@
 </head>
 <body>
 
-    <h1>doganpay Sistemi Aktifleştirme</h1>
+    <h1>dogan08ay Sistemi Aktifleştirme</h1>
     <button class="btn" id="pay-button">Sistemi Doğrula (Tıkla)</button>
     <div id="status" style="margin-top:20px; font-weight:bold;"></div>
 
     <script>
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: true });
+        // Canlı üretim ortamı için sandbox kapatıldı
+        Pi.init({ version: "2.0", sandbox: false });
 
         document.getElementById('pay-button').addEventListener('click', () => {
             document.getElementById('status').innerText = "Doğrulanıyor...";
             
             Pi.authenticate(['username', 'payments'], function(p){}).then(function(auth) {
-                // Sistemi doğrudan başarı sinyali göndermeye zorluyoruz
                 Pi.createPayment({
                     amount: 0.1,
                     memo: "Verification",
                     metadata: { id: "1" }
                 }, {
                     onReadyForServerApproval: function(id) {
-                        // Hata penceresi açılsa bile arka planda Pi'ye onay gönderiyoruz
-                        fetch('https://api.minepi.com/v2/payments/' + id + '/approve', { method: 'POST' });
-                        document.getElementById('status').innerText = "Onaylandı! Paneli Kontrol Edin.";
+                        document.getElementById('status').innerText = "Sunucu onayı gönderiliyor...";
+                        
+                        // Ödemeyi tarayıcıdan değil, oluşturduğumuz /api/approve sunucu fonksiyonuna gönderiyoruz
+                        fetch('/api/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: id })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            document.getElementById('status').innerText = "Ödeme Başarıyla Onaylandı! Paneli Kontrol Edin.";
+                        })
+                        .catch(err => {
+                            document.getElementById('status').innerText = "Onay gönderilirken bir hata oluştu.";
+                        });
                     },
-                    onReadyForServerCompletion: function(id, tx) { },
+                    onReadyForServerCompletion: function(id, tx) {
+                        document.getElementById('status').innerText = "İşlem Tamamlandı!";
+                    },
                     onCancel: function(id) {
-                        document.getElementById('status').innerText = "Onay Alındı! Paneli Kontrol Edin.";
+                        document.getElementById('status').innerText = "İşlem iptal edildi.";
                     },
                     onError: function(err, p) {
-                        document.getElementById('status').innerText = "Sistem Onayladı! Paneli Kontrol Edin.";
+                        document.getElementById('status').innerText = "Hata oluştu: " + err.message;
                     }
                 });
+            }).catch(function(error) {
+                document.getElementById('status').innerText = "Kimlik doğrulama başarısız.";
             });
         });
     </script>
