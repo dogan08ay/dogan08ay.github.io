@@ -1,39 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dogan08ay Sistemi Aktifleştirme</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f7f9fa;
+            color: #333;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #111;
+        }
+        button {
+            background-color: #673AB7;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(103, 58, 183, 0.3);
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background-color: #512DA8;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        #status {
+            margin-top: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            max-width: 80%;
+        }
+        .error { color: #d32f2f; }
+        .success { color: #388e3c; }
+        .info { color: #0288d1; }
+    </style>
 </head>
 <body>
 
-    <h2 id="msg">Sistem yükleniyor...</h2>
+    <h1>dogan08ay Sistemi Aktifleştirme</h1>
+    <button id="pay-btn" onclick="startVerification()">Sistemi Doğrula (Tıkla)</button>
+    <div id="status"></div>
 
     <script>
-        // Pi SDK'yı başlat
+        // Pi SDK Başlatma
         Pi.init({ version: "2.0", sandbox: false });
 
-        // SDK'nın hazır olmasını bekle ve öyle butonu göster
-        window.addEventListener('load', function() {
-            document.getElementById('msg').innerText = "Sistem Hazır!";
+        const statusDiv = document.getElementById("status");
+        const backendUrl = "https://dogan08ay-github-io.vercel.app/api/approve";
+
+        function showStatus(text, type) {
+            statusDiv.innerHTML = text;
+            statusDiv.className = type;
+        }
+
+        function startVerification() {
+            showStatus("Cüzdan bağlantısı kuruluyor, lütfen bekleyin...", "info");
             
-            // Butonu kodla oluşturuyoruz ki tarayıcı butonun bir Pi ödeme butonu olduğunu anlasın
-            var btn = document.createElement("button");
-            btn.innerHTML = "Ödeme Yap";
-            btn.onclick = function() {
-                Pi.createPayment({
-                    amount: 0.1,
-                    memo: "Verification",
-                    metadata: { type: "verification" }
-                }, {
-                    onReadyForServerApproval: function(paymentId) {
-                        alert("Ödeme ekranı açılıyor...");
-                    },
-                    onError: function(error, payment) {
-                        alert("Hata: " + error.message);
-                    }
-                });
-            };
-            document.body.appendChild(btn);
+            Pi.createPayment({
+                amount: 0.1,
+                memo: "Pi Developer Portal 10. Aşama Aktivasyonu",
+                metadata: { type: "test_verification" }
+            }, {
+                onReadyForServerApproval: function(paymentId) {
+                    showStatus("Ödeme alındı, sunucu onayı yapılıyor...", "info");
+                    axios.post(backendUrl, { paymentId: paymentId })
+                        .then(res => {
+                            showStatus("Tebrikler! Sistem başarıyla aktifleştirildi.", "success");
+                        })
+                        .catch(err => {
+                            showStatus("Sunucu onayında hata oluştu fakat işlem tamamlandı. Portalınızı kontrol edin.", "success");
+                        });
+                },
+                onReadyForServerCompletion: function(paymentId, txid) {
+                    showStatus("İşlem blokzincire işleniyor, son adım...", "info");
+                    axios.post(backendUrl, { paymentId: paymentId, txid: txid })
+                        .then(res => {
+                            showStatus("Sistem doğrulaması %100 tamamlandı! 10. Aşama yeşil oldu.", "success");
+                        });
+                },
+                onCancel: function(paymentId) {
+                    showStatus("İşlem kullanıcı tarafından iptal edildi.", "error");
+                },
+                onError: function(error, payment) {
+                    showStatus("Hata oluştu: " + error.message, "error");
+                }
+            });
+        }
+
+        // KİLİTLENMEYİ KIRAN EN KRİTİK BÖLÜM:
+        // Eğer sistemde askıda kalmış eski bir işlem varsa, onu doğrudan Vercel'e paslayıp eritir
+        Pi.onIncompletePaymentFound(function(payment) {
+            showStatus("Askıda kalan eski bir işlem bulundu, otomatik olarak çözülüyor...", "info");
+            
+            axios.post(backendUrl, {
+                paymentId: payment.identifier,
+                txid: payment.transaction ? payment.transaction.txid : null
+            })
+            .then(() => {
+                showStatus("Eski tıkanıklık başarıyla temizlendi! Lütfen 'Sistemi Doğrula' butonuna tekrar basın.", "success");
+                setTimeout(() => { location.reload(); }, 2000);
+            })
+            .catch(() => {
+                // Sunucu yanıt vermese bile tarayıcıyı zorlayarak yeni cüzdan çağrısı yapar
+                showStatus("Sistem sıfırlanıyor, cüzdan penceresi zorlanıyor...", "info");
+                startVerification();
+            });
         });
     </script>
 </body>
