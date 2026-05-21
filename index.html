@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dogan08ay Sistemi Aktifleştirme</title>
+    <title>dogan08ay Activation System</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
@@ -40,9 +40,6 @@
             background-color: #512DA8;
             transform: translateY(-2px);
         }
-        button:active {
-            transform: translateY(1px);
-        }
         #status {
             margin-top: 25px;
             font-size: 1.1rem;
@@ -61,7 +58,7 @@
     <div id="status"></div>
 
     <script>
-        // Pi SDK Başlatma
+        // Pi SDK Initialization
         Pi.init({ version: "2.0", sandbox: false });
 
         const statusDiv = document.getElementById("status");
@@ -77,14 +74,14 @@
             
             Pi.createPayment({
                 amount: 0.1,
-                memo: "Pi Developer Portal 10. Aşama Aktivasyonu",
-                metadata: { type: "test_verification" }
+                memo: "App verification payment",
+                metadata: { app_id: "dogan08ay-verification" }
             }, {
                 onReadyForServerApproval: function(paymentId) {
                     showStatus("Ödeme alındı, sunucu onayı yapılıyor...", "info");
                     axios.post(backendUrl, { paymentId: paymentId })
                         .then(res => {
-                            showStatus("Tebrikler! Sistem başarıyla aktifleştirildi.", "success");
+                            showStatus("Sistem başarıyla aktifleştirildi!", "success");
                         })
                         .catch(err => {
                             showStatus("Sunucu onayında hata oluştu fakat işlem tamamlandı. Portalınızı kontrol edin.", "success");
@@ -94,7 +91,7 @@
                     showStatus("İşlem blokzincire işleniyor, son adım...", "info");
                     axios.post(backendUrl, { paymentId: paymentId, txid: txid })
                         .then(res => {
-                            showStatus("Sistem doğrulaması %100 tamamlandı! 10. Aşama yeşil oldu.", "success");
+                            showStatus("Sistem doğrulaması tamamlandı! 10. Aşama yeşil oldu.", "success");
                         });
                 },
                 onCancel: function(paymentId) {
@@ -106,8 +103,7 @@
             });
         }
 
-        // KİLİTLENMEYİ KIRAN EN KRİTİK BÖLÜM:
-        // Eğer sistemde askıda kalmış eski bir işlem varsa, onu doğrudan Vercel'e paslayıp eritir
+        // Auto-handle pending/incomplete payments to break the loop
         Pi.onIncompletePaymentFound(function(payment) {
             showStatus("Askıda kalan eski bir işlem bulundu, otomatik olarak çözülüyor...", "info");
             
@@ -120,7 +116,6 @@
                 setTimeout(() => { location.reload(); }, 2000);
             })
             .catch(() => {
-                // Sunucu yanıt vermese bile tarayıcıyı zorlayarak yeni cüzdan çağrısı yapar
                 showStatus("Sistem sıfırlanıyor, cüzdan penceresi zorlanıyor...", "info");
                 startVerification();
             });
