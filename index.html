@@ -6,32 +6,33 @@
 </head>
 <body>
 
-    <button id="pay-btn" onclick="requestPayment()">Sistemi Doğrula (Tıkla)</button>
+    <button id="pay-btn">Sistemi Doğrula (Tıkla)</button>
 
     <script>
-        // Pi SDK Başlatma
+        // Pi SDK'yı yükle
         Pi.init({ version: "2.0", sandbox: false });
 
-        function requestPayment() {
+        // Butona tıklandığında işlemi tetikleyen mekanizma
+        document.getElementById('pay-btn').addEventListener('click', function() {
             Pi.createPayment({
                 amount: 0.1,
                 memo: "Test Payment",
                 metadata: { type: "test" }
             }, {
                 onReadyForServerApproval: function(paymentId) {
-                    // Pi cüzdanı bu aşamada ödemeyi onaylamanızı ister
+                    console.log("Approval ready: " + paymentId);
                 },
                 onReadyForServerCompletion: function(paymentId, txid) {
-                    // İşlem blokzincirde tamamlandığında burası çalışır
+                    alert("İşlem başarıyla tamamlandı!");
                 },
                 onCancel: function(paymentId) {
-                    // Kullanıcı iptal ederse
+                    alert("İptal edildi.");
                 },
                 onError: function(error, payment) {
-                    // Bir hata olursa
+                    alert("Hata oluştu: " + error.message);
                 }
             });
-        }
+        });
     </script>
 </body>
 </html>
