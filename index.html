@@ -1,125 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dogan08ay Activation System</title>
+    <title>Pi App</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f7f9fa;
-            color: #333;
-            text-align: center;
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 30px;
-            color: #111;
-        }
-        button {
-            background-color: #673AB7;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(103, 58, 183, 0.3);
-            transition: all 0.2s ease;
-        }
-        button:hover {
-            background-color: #512DA8;
-            transform: translateY(-2px);
-        }
-        #status {
-            margin-top: 25px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            max-width: 80%;
-        }
-        .error { color: #d32f2f; }
-        .success { color: #388e3c; }
-        .info { color: #0288d1; }
-    </style>
 </head>
 <body>
-
-    <h1>dogan08ay Sistemi Aktifleştirme</h1>
-    <button id="pay-btn" onclick="startVerification()">Sistemi Doğrula (Tıkla)</button>
-    <div id="status"></div>
+    <h1>Pi Sistemi</h1>
+    <button onclick="startPayment()">Sistemi Doğrula (Tıkla)</button>
 
     <script>
-        // Pi SDK Initialization
         Pi.init({ version: "2.0", sandbox: false });
 
-        const statusDiv = document.getElementById("status");
-        const backendUrl = "https://dogan08ay-github-io.vercel.app/api/approve";
-
-        function showStatus(text, type) {
-            statusDiv.innerHTML = text;
-            statusDiv.className = type;
-        }
-
-        function startVerification() {
-            showStatus("Cüzdan bağlantısı kuruluyor, lütfen bekleyin...", "info");
-            
+        function startPayment() {
             Pi.createPayment({
                 amount: 0.1,
-                memo: "App verification payment",
-                metadata: { app_id: "dogan08ay-verification" }
+                memo: "Test Payment",
+                metadata: { type: "test" }
             }, {
                 onReadyForServerApproval: function(paymentId) {
-                    showStatus("Ödeme alındı, sunucu onayı yapılıyor...", "info");
-                    axios.post(backendUrl, { paymentId: paymentId })
-                        .then(res => {
-                            showStatus("Sistem başarıyla aktifleştirildi!", "success");
-                        })
-                        .catch(err => {
-                            showStatus("Sunucu onayında hata oluştu fakat işlem tamamlandı. Portalınızı kontrol edin.", "success");
-                        });
+                    // İşlem onay bekliyor
                 },
                 onReadyForServerCompletion: function(paymentId, txid) {
-                    showStatus("İşlem blokzincire işleniyor, son adım...", "info");
-                    axios.post(backendUrl, { paymentId: paymentId, txid: txid })
-                        .then(res => {
-                            showStatus("Sistem doğrulaması tamamlandı! 10. Aşama yeşil oldu.", "success");
-                        });
+                    // İşlem tamamlandı
                 },
                 onCancel: function(paymentId) {
-                    showStatus("İşlem kullanıcı tarafından iptal edildi.", "error");
+                    // İşlem iptal edildi
                 },
                 onError: function(error, payment) {
-                    showStatus("Hata oluştu: " + error.message, "error");
+                    // Hata oluştu
                 }
             });
         }
-
-        // Auto-handle pending/incomplete payments to break the loop
-        Pi.onIncompletePaymentFound(function(payment) {
-            showStatus("Askıda kalan eski bir işlem bulundu, otomatik olarak çözülüyor...", "info");
-            
-            axios.post(backendUrl, {
-                paymentId: payment.identifier,
-                txid: payment.transaction ? payment.transaction.txid : null
-            })
-            .then(() => {
-                showStatus("Eski tıkanıklık başarıyla temizlendi! Lütfen 'Sistemi Doğrula' butonuna tekrar basın.", "success");
-                setTimeout(() => { location.reload(); }, 2000);
-            })
-            .catch(() => {
-                showStatus("Sistem sıfırlanıyor, cüzdan penceresi zorlanıyor...", "info");
-                startVerification();
-            });
-        });
     </script>
 </body>
 </html>
