@@ -1,37 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Pi Payment</title>
+    <meta charset="UTF-8">
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 <body>
 
-    <button onclick="pay()">Ödeme Yap</button>
+    <h2 id="msg">Sistem yükleniyor...</h2>
 
     <script>
-        // SDK başlatma
+        // Pi SDK'yı başlat
         Pi.init({ version: "2.0", sandbox: false });
 
-        function pay() {
-            Pi.createPayment({
-                amount: 0.1,
-                memo: "App Verification",
-                metadata: { type: "verification" }
-            }, {
-                onReadyForServerApproval: function(paymentId) {
-                    alert("Ödeme isteği alındı, lütfen onaylayın.");
-                },
-                onReadyForServerCompletion: function(paymentId, txid) {
-                    alert("Ödeme başarıyla gerçekleşti!");
-                },
-                onCancel: function(paymentId) {
-                    alert("Ödeme iptal edildi.");
-                },
-                onError: function(error, payment) {
-                    alert("Hata: " + error.message);
-                }
-            });
-        }
+        // SDK'nın hazır olmasını bekle ve öyle butonu göster
+        window.addEventListener('load', function() {
+            document.getElementById('msg').innerText = "Sistem Hazır!";
+            
+            // Butonu kodla oluşturuyoruz ki tarayıcı butonun bir Pi ödeme butonu olduğunu anlasın
+            var btn = document.createElement("button");
+            btn.innerHTML = "Ödeme Yap";
+            btn.onclick = function() {
+                Pi.createPayment({
+                    amount: 0.1,
+                    memo: "Verification",
+                    metadata: { type: "verification" }
+                }, {
+                    onReadyForServerApproval: function(paymentId) {
+                        alert("Ödeme ekranı açılıyor...");
+                    },
+                    onError: function(error, payment) {
+                        alert("Hata: " + error.message);
+                    }
+                });
+            };
+            document.body.appendChild(btn);
+        });
     </script>
 </body>
 </html>
