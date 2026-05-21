@@ -18,7 +18,6 @@
 
     <script>
         const Pi = window.Pi;
-        // Canlı üretim ortamı için sandbox kapatıldı
         Pi.init({ version: "2.0", sandbox: false });
 
         document.getElementById('pay-button').addEventListener('click', () => {
@@ -33,7 +32,6 @@
                     onReadyForServerApproval: function(id) {
                         document.getElementById('status').innerText = "Sunucu onayı gönderiliyor...";
                         
-                        // Ödemeyi tarayıcıdan değil, oluşturduğumuz /api/approve sunucu fonksiyonuna gönderiyoruz
                         fetch('/api/approve', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
