@@ -16,19 +16,27 @@
         // 1. Pi SDK Başlatma
         window.Pi.init({ version: "2.0", sandbox: true });
 
-        // 2. Ödeme Butonu
+        // 2. Yarım kalan ödemeleri otomatik temizle
+        window.Pi.getIncompletePayment().then(payment => {
+            if (payment) {
+                payment.cancel(); // Takılan ödemeyi iptal et
+                console.log("Eski ödeme temizlendi.");
+            }
+        });
+
+        // 3. Ödeme Butonu İşlemleri
         document.getElementById('payButton').addEventListener('click', async () => {
             try {
                 msg.innerText = "Kimlik doğrulanıyor...";
                 
-                // ÖNCE authenticate fonksiyonunu çağırıp 'payments' yetkisini almalıyız
+                // Kullanıcıdan payments yetkisini al
                 const user = await window.Pi.authenticate(['username', 'payments'], () => {
                     msg.innerText = "Kimlik doğrulama başarısız.";
                 });
 
                 msg.innerText = "Ödeme başlatılıyor...";
 
-                // ŞİMDİ ödeme oluşturabiliriz
+                // Ödeme oluştur
                 const payment = await window.Pi.createPayment({
                     amount: 1.0, 
                     memo: "Test Ödemesi",
