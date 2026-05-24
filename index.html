@@ -1,44 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>doganpay Ödeme</title>
+    <title>doganpay</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 <body>
-    <h1>doganpay Ödeme</h1>
+    <h1>doganpay</h1>
     <button id="payButton" style="padding: 20px; font-size: 20px;">Ödemeyi Başlat</button>
-    <p id="status"></p>
 
     <script>
-        const status = document.getElementById('status');
-        
-        // Pi SDK'yı başlat
-        window.Pi.init({ version: "2.0", sandbox: true });
+        const Pi = window.Pi;
+        // BURASI ÇOK ÖNEMLİ: 'payments' yetkisini burada istiyoruz
+        Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('payButton').addEventListener('click', async () => {
-            status.innerText = "Ödeme başlatılıyor...";
             try {
-                const payment = await window.Pi.createPayment({
+                const payment = await Pi.createPayment({
                     amount: 1.0,
                     memo: "Test",
-                    metadata: { type: "test" }
+                    metadata: { paymentId: "test_123" }
                 }, {
                     onReadyForServerApproval: (paymentId) => {
-                        status.innerText = "Onay bekleniyor: " + paymentId;
-                        fetch('/api/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'payment_prepared', paymentId })
-                        });
+                        console.log("Onay bekleniyor:", paymentId);
                     },
                     onReadyForServerCompletion: (paymentId, txid) => {
-                        status.innerText = "Ödeme tamamlandı: " + txid;
+                        console.log("Tamamlandı:", txid);
                     },
-                    onCancel: () => status.innerText = "İptal edildi.",
-                    onError: (err) => status.innerText = "Hata: " + err
+                    onError: (err) => alert("Hata: " + JSON.stringify(err))
                 });
             } catch (err) {
-                status.innerText = "Hata: " + err.message;
+                alert("Ödeme Hatası: " + err.message);
             }
         });
     </script>
