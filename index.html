@@ -1,63 +1,41 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dogan08ay Onay</title>
+    <title>doganpay Ödeme</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
-        .btn { background-color: #673ab7; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
-    </style>
 </head>
 <body>
-
-    <h1>dogan08ay Sistemi Aktifleştirme</h1>
-    <button class="btn" id="pay-button">Sistemi Doğrula (Tıkla)</button>
-    <div id="status" style="margin-top:20px; font-weight:bold;"></div>
+    <h1>doganpay Ödeme Sistemi</h1>
+    <button id="payButton">Ödemeyi Başlat</button>
 
     <script>
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
+        Pi.init({ version: "2.0", sandbox: true });
 
-        document.getElementById('pay-button').addEventListener('click', () => {
-            document.getElementById('status').innerText = "Doğrulanıyor...";
-            
-            Pi.authenticate(['username', 'payments'], function(p){}).then(function(auth) {
-                Pi.createPayment({
-                    amount: 0.1,
-                    memo: "Verification",
-                    metadata: { id: "1" }
+        document.getElementById('payButton').addEventListener('click', async () => {
+            try {
+                const payment = await Pi.createPayment({
+                    amount: 1.0, // Ödeme miktarı
+                    memo: "Test Ödemesi",
+                    metadata: { paymentId: "test_123" }
                 }, {
-                    onReadyForServerApproval: function(id) {
-                        document.getElementById('status').innerText = "Sunucu onayı gönderiliyor...";
-                        
-                        fetch('/api/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId: id })
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            document.getElementById('status').innerText = "Ödeme Başarıyla Onaylandı! Paneli Kontrol Edin.";
-                        })
-                        .catch(err => {
-                            document.getElementById('status').innerText = "Onay gönderilirken bir hata oluştu.";
-                        });
+                    onReadyForServerApproval: (paymentId) => {
+                        console.log("Ödeme hazır, sunucuya gönderiliyor:", paymentId);
+                        // Burada Pi'ye ödemeyi onaylaması için sinyal gider
                     },
-                    onReadyForServerCompletion: function(id, tx) {
-                        document.getElementById('status').innerText = "İşlem Tamamlandı!";
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        console.log("Ödeme tamamlandı!");
                     },
-                    onCancel: function(id) {
-                        document.getElementById('status').innerText = "İşlem iptal edildi.";
+                    onCancel: (paymentId) => {
+                        console.log("Ödeme iptal edildi.");
                     },
-                    onError: function(err, p) {
-                        document.getElementById('status').innerText = "Hata oluştu: " + err.message;
+                    onError: (error, paymentId) => {
+                        console.error("Hata oluştu:", error);
                     }
                 });
-            }).catch(function(error) {
-                document.getElementById('status').innerText = "Kimlik doğrulama başarısız.";
-            });
+            } catch (err) {
+                console.error("Ödeme başlatılamadı:", err);
+            }
         });
     </script>
 </body>
