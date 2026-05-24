@@ -14,42 +14,35 @@
         const msg = document.getElementById('msg');
         window.Pi.init({ version: "2.0", sandbox: true });
 
-        document.getElementById('payButton').addEventListener('click', async () => {
-            msg.innerText = "Kimlik doğrulanıyor... (Lütfen bekleyin)";
-            
-            try {
-                // Hata yakalayıcı: Eğer 10 saniye içinde yanıt gelmezse hata ver
-                const timeout = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Zaman aşımı: Pi Browser izin vermedi.")), 10000)
-                );
+        // Sert temizlik: Sayfa her yüklendiğinde eski ödemeyi iptal etmeye çalış
+        window.Pi.getIncompletePayment().then(payment => {
+            if (payment) {
+                console.log("Askıda kalan işlem tespit edildi, iptal ediliyor...");
+                payment.cancel();
+            }
+        });
 
-                const authPromise = window.Pi.authenticate(['username', 'payments'], () => {
-                    throw new Error("Kullanıcı reddetti.");
+        document.getElementById('payButton').addEventListener('click', async () => {
+            try {
+                // 'payments' yetkisini al
+                const user = await window.Pi.authenticate(['username', 'payments'], () => {
+                    throw new Error("Doğrulama reddedildi.");
                 });
 
-                // Doğrulama veya zaman aşımından hangisi önce biterse
-                const user = await Promise.race([authPromise, timeout]);
-                
-                msg.innerText = "Doğrulandı! Ödeme başlatılıyor...";
+                msg.innerText = "Ödeme başlatılıyor...";
 
                 const payment = await window.Pi.createPayment({
-                    amount: 1.0, 
+                    amount: 0.1, // Test miktarını düşürdük
                     memo: "Test Ödemesi",
-                    metadata: { paymentId: "test_123" }
+                    metadata: { paymentId: "test_" + Date.now() } // Her seferinde benzersiz ID
                 }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        msg.innerText = "Sunucu onayı bekleniyor...";
-                        fetch('/api/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId: paymentId })
-                        });
+                    onReadyForServerApproval: (id) => {
+                        msg.innerText = "Onay bekleniyor...";
+                        fetch('/api/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) });
                     },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        msg.innerText = "Ödeme Başarılı: " + txid;
-                    },
-                    onCancel: () => msg.innerText = "Ödeme iptal edildi.",
-                    onError: (error) => msg.innerText = "Hata: " + JSON.stringify(error)
+                    onReadyForServerCompletion: (id, txid) => { msg.innerText = "Başarılı: " + txid; },
+                    onCancel: () => msg.innerText = "İptal edildi.",
+                    onError: (e) => msg.innerText = "Hata: " + JSON.stringify(e)
                 });
             } catch (err) {
                 msg.innerText = "Hata: " + err.message;
