@@ -12,28 +12,17 @@
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: true });
 
-        document.getElementById('payButton').addEventListener('click', async () => {
-            try {
-                // Önemli: Her seferinde eski bir ödeme varsa temizle
-                // Bu kısım senin sürekli aldığın hatayı tetikleyen "askıdaki ödemeyi" çözer
-                const payments = await Pi.getIncompletePayment();
-                if (payments) {
-                    await Pi.closeIncompletePayment(payments.identifier);
-                }
-
-                // Yeni ödeme oluştur
-                await Pi.createPayment({
-                    amount: 0.1,
-                    memo: "Test Ödeme",
-                    metadata: { note: "Deneme" }
-                }, {
-                    onReadyForServer: (paymentId) => { console.log(paymentId); },
-                    onCancel: (paymentId) => { alert("İptal edildi"); },
-                    onError: (error, paymentId) => { alert("Hata: " + error); }
-                });
-            } catch (err) {
-                alert("Sistem Hatası: " + err);
-            }
+        document.getElementById('payButton').addEventListener('click', () => {
+            Pi.createPayment({
+                amount: 0.1,
+                memo: "Test",
+                metadata: { type: "test" }
+            }, {
+                onReadyForServer: (paymentId) => { console.log(paymentId); },
+                onCancel: (paymentId) => { alert("İptal edildi"); },
+                onError: (error, paymentId) => { alert("Hata: " + error); },
+                onComplete: (paymentId) => { alert("Başarılı!"); }
+            });
         });
     </script>
 </body>
