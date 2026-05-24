@@ -1,27 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>DoganPay</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 <body>
-    <h1>DoganPay</h1>
+    <h1>DoganPay Test</h1>
     <button id="payButton">Ödeme Yap</button>
 
     <script>
+        // Pi SDK Başlatma
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('payButton').addEventListener('click', () => {
+            alert("Ödeme başlatılıyor...");
+            
             Pi.createPayment({
                 amount: 0.1,
-                memo: "Test",
+                memo: "Test Ödeme",
                 metadata: { type: "test" }
             }, {
-                onReadyForServer: (paymentId) => { console.log(paymentId); },
-                onCancel: (paymentId) => { alert("İptal edildi"); },
-                onError: (error, paymentId) => { alert("Hata: " + error); },
-                onComplete: (paymentId) => { alert("Başarılı!"); }
+                onReadyForServer: (paymentId) => { 
+                    alert("Sunucuya gönderildi: " + paymentId);
+                },
+                onCancel: (paymentId) => { 
+                    alert("Ödeme iptal edildi."); 
+                },
+                onError: (error, paymentId) => { 
+                    alert("Hata oluştu: " + error); 
+                },
+                onComplete: (paymentId) => { 
+                    alert("Ödeme Başarılı!"); 
+                }
             });
         });
     </script>
