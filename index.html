@@ -5,36 +5,40 @@
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 <body>
-    <h1>doganpay Ödeme Sistemi</h1>
-    <button id="payButton">Ödemeyi Başlat</button>
+    <h1>doganpay Ödeme</h1>
+    <button id="payButton" style="padding: 20px; font-size: 20px;">Ödemeyi Başlat</button>
+    <p id="status"></p>
 
     <script>
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: true });
+        const status = document.getElementById('status');
+        
+        // Pi SDK'yı başlat
+        window.Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('payButton').addEventListener('click', async () => {
+            status.innerText = "Ödeme başlatılıyor...";
             try {
-                const payment = await Pi.createPayment({
-                    amount: 1.0, // Ödeme miktarı
-                    memo: "Test Ödemesi",
-                    metadata: { paymentId: "test_123" }
+                const payment = await window.Pi.createPayment({
+                    amount: 1.0,
+                    memo: "Test",
+                    metadata: { type: "test" }
                 }, {
                     onReadyForServerApproval: (paymentId) => {
-                        console.log("Ödeme hazır, sunucuya gönderiliyor:", paymentId);
-                        // Burada Pi'ye ödemeyi onaylaması için sinyal gider
+                        status.innerText = "Onay bekleniyor: " + paymentId;
+                        fetch('/api/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'payment_prepared', paymentId })
+                        });
                     },
                     onReadyForServerCompletion: (paymentId, txid) => {
-                        console.log("Ödeme tamamlandı!");
+                        status.innerText = "Ödeme tamamlandı: " + txid;
                     },
-                    onCancel: (paymentId) => {
-                        console.log("Ödeme iptal edildi.");
-                    },
-                    onError: (error, paymentId) => {
-                        console.error("Hata oluştu:", error);
-                    }
+                    onCancel: () => status.innerText = "İptal edildi.",
+                    onError: (err) => status.innerText = "Hata: " + err
                 });
             } catch (err) {
-                console.error("Ödeme başlatılamadı:", err);
+                status.innerText = "Hata: " + err.message;
             }
         });
     </script>
