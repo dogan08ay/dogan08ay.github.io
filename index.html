@@ -8,35 +8,30 @@
 <body>
     <h1>doganpay Ödeme Sistemi</h1>
     <button id="payButton" style="padding: 15px 30px; font-size: 18px; cursor: pointer;">Ödemeyi Başlat</button>
-    <p id="msg"></p>
+    <p id="msg" style="color: blue;"></p>
 
     <script>
         const msg = document.getElementById('msg');
-        
-        // 1. Pi SDK Başlatma
         window.Pi.init({ version: "2.0", sandbox: true });
 
-        // 2. Yarım kalan ödemeleri otomatik temizle
-        window.Pi.getIncompletePayment().then(payment => {
-            if (payment) {
-                payment.cancel(); // Takılan ödemeyi iptal et
-                console.log("Eski ödeme temizlendi.");
-            }
-        });
-
-        // 3. Ödeme Butonu İşlemleri
         document.getElementById('payButton').addEventListener('click', async () => {
+            msg.innerText = "Kimlik doğrulanıyor... (Lütfen bekleyin)";
+            
             try {
-                msg.innerText = "Kimlik doğrulanıyor...";
-                
-                // Kullanıcıdan payments yetkisini al
-                const user = await window.Pi.authenticate(['username', 'payments'], () => {
-                    msg.innerText = "Kimlik doğrulama başarısız.";
+                // Hata yakalayıcı: Eğer 10 saniye içinde yanıt gelmezse hata ver
+                const timeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Zaman aşımı: Pi Browser izin vermedi.")), 10000)
+                );
+
+                const authPromise = window.Pi.authenticate(['username', 'payments'], () => {
+                    throw new Error("Kullanıcı reddetti.");
                 });
 
-                msg.innerText = "Ödeme başlatılıyor...";
+                // Doğrulama veya zaman aşımından hangisi önce biterse
+                const user = await Promise.race([authPromise, timeout]);
+                
+                msg.innerText = "Doğrulandı! Ödeme başlatılıyor...";
 
-                // Ödeme oluştur
                 const payment = await window.Pi.createPayment({
                     amount: 1.0, 
                     memo: "Test Ödemesi",
