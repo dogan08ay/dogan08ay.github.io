@@ -11,35 +11,21 @@
 
     <script>
         const Pi = window.Pi;
-        
-        // SDK'yı başlat
         Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('payButton').addEventListener('click', () => {
-            alert("Ödeme süreci başlıyor... Lütfen bekleyin.");
-            
-            try {
+            Pi.authenticate(["payments"], (user) => {
                 Pi.createPayment({
                     amount: 0.1,
                     memo: "Test Ödeme",
                     metadata: { type: "test" }
                 }, {
-                    onReadyForServer: (paymentId) => { 
-                        alert("Sunucu ile bağlantı kuruldu. Onay ekranı açılıyor...");
-                    },
-                    onCancel: (paymentId) => { 
-                        alert("Ödeme kullanıcı tarafından iptal edildi."); 
-                    },
-                    onError: (error, paymentId) => { 
-                        alert("HATA OLUŞTU: " + error); 
-                    },
-                    onComplete: (paymentId) => { 
-                        alert("Ödeme Başarılı! ID: " + paymentId); 
-                    }
+                    onReadyForServer: (p) => alert("Sunucu hazır."),
+                    onCancel: (p) => alert("İptal edildi."),
+                    onError: (e, p) => alert("Hata: " + e),
+                    onComplete: (p) => alert("Başarılı!")
                 });
-            } catch (e) {
-                alert("Kod Hatası: " + e.message);
-            }
+            }, (e) => alert("Giriş hatası: " + e));
         });
     </script>
 </body>
