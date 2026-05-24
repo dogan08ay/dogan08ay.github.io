@@ -7,34 +7,39 @@
 </head>
 <body>
     <h1>DoganPay Test</h1>
-    <button id="payButton">Ödeme Yap</button>
+    <button id="payButton" style="padding: 20px; font-size: 20px;">Ödeme Yap</button>
 
     <script>
-        // Pi SDK Başlatma
         const Pi = window.Pi;
+        
+        // SDK'yı başlat
         Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('payButton').addEventListener('click', () => {
-            alert("Ödeme başlatılıyor...");
+            alert("Ödeme süreci başlıyor... Lütfen bekleyin.");
             
-            Pi.createPayment({
-                amount: 0.1,
-                memo: "Test Ödeme",
-                metadata: { type: "test" }
-            }, {
-                onReadyForServer: (paymentId) => { 
-                    alert("Sunucuya gönderildi: " + paymentId);
-                },
-                onCancel: (paymentId) => { 
-                    alert("Ödeme iptal edildi."); 
-                },
-                onError: (error, paymentId) => { 
-                    alert("Hata oluştu: " + error); 
-                },
-                onComplete: (paymentId) => { 
-                    alert("Ödeme Başarılı!"); 
-                }
-            });
+            try {
+                Pi.createPayment({
+                    amount: 0.1,
+                    memo: "Test Ödeme",
+                    metadata: { type: "test" }
+                }, {
+                    onReadyForServer: (paymentId) => { 
+                        alert("Sunucu ile bağlantı kuruldu. Onay ekranı açılıyor...");
+                    },
+                    onCancel: (paymentId) => { 
+                        alert("Ödeme kullanıcı tarafından iptal edildi."); 
+                    },
+                    onError: (error, paymentId) => { 
+                        alert("HATA OLUŞTU: " + error); 
+                    },
+                    onComplete: (paymentId) => { 
+                        alert("Ödeme Başarılı! ID: " + paymentId); 
+                    }
+                });
+            } catch (e) {
+                alert("Kod Hatası: " + e.message);
+            }
         });
     </script>
 </body>
