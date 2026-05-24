@@ -1,58 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>doganpay Ödeme</title>
+    <title>DoganPay</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <h1>doganpay Ödeme Sistemi</h1>
-    <button id="payButton" style="padding: 15px 30px; font-size: 18px; cursor: pointer;">Ödemeyi Başlat</button>
-    <p id="msg" style="color: blue;"></p>
+    <h1>DoganPay</h1>
+    <button id="payButton">Ödeme Yap</button>
 
     <script>
-        const msg = document.getElementById('msg');
-        window.Pi.init({ version: "2.0", sandbox: true });
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: true });
 
         document.getElementById('payButton').addEventListener('click', async () => {
-            msg.innerText = "Kimlik doğrulanıyor... (Lütfen bekleyin)";
-            
             try {
-                // Hata yakalayıcı: Eğer 10 saniye içinde yanıt gelmezse hata ver
-                const timeout = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Zaman aşımı: Pi Browser izin vermedi.")), 10000)
-                );
+                // Önemli: Her seferinde eski bir ödeme varsa temizle
+                // Bu kısım senin sürekli aldığın hatayı tetikleyen "askıdaki ödemeyi" çözer
+                const payments = await Pi.getIncompletePayment();
+                if (payments) {
+                    await Pi.closeIncompletePayment(payments.identifier);
+                }
 
-                const authPromise = window.Pi.authenticate(['username', 'payments'], () => {
-                    throw new Error("Kullanıcı reddetti.");
-                });
-
-                // Doğrulama veya zaman aşımından hangisi önce biterse
-                const user = await Promise.race([authPromise, timeout]);
-                
-                msg.innerText = "Doğrulandı! Ödeme başlatılıyor...";
-
-                const payment = await window.Pi.createPayment({
-                    amount: 1.0, 
-                    memo: "Test Ödemesi",
-                    metadata: { paymentId: "test_123" }
+                // Yeni ödeme oluştur
+                await Pi.createPayment({
+                    amount: 0.1,
+                    memo: "Test Ödeme",
+                    metadata: { note: "Deneme" }
                 }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        msg.innerText = "Sunucu onayı bekleniyor...";
-                        fetch('/api/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId: paymentId })
-                        });
-                    },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        msg.innerText = "Ödeme Başarılı: " + txid;
-                    },
-                    onCancel: () => msg.innerText = "Ödeme iptal edildi.",
-                    onError: (error) => msg.innerText = "Hata: " + JSON.stringify(error)
+                    onReadyForServer: (paymentId) => { console.log(paymentId); },
+                    onCancel: (paymentId) => { alert("İptal edildi"); },
+                    onError: (error, paymentId) => { alert("Hata: " + error); }
                 });
             } catch (err) {
-                msg.innerText = "Hata: " + err.message;
+                alert("Sistem Hatası: " + err);
             }
         });
     </script>
